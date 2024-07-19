@@ -54,6 +54,7 @@ async function getLastMessage(channelId, userId) {
 	if (userMessagesArray.length < 2) return;
 
 	const message = userMessagesArray[1];
+	console.log('id último: ' + message.author.id);
 	return message;
 }
 
@@ -73,11 +74,18 @@ client.on(Events.MessageCreate, async message => {
 
 	// Separate the info on the post for analysis
 	const lines = message.content.split('\n');
-	const user = message.mentions.users.first();
 	const operationLine = lines.find(line => line.startsWith('Deposita') || line.startsWith('Retira'));
 	const totalLine = lines.find(line => line.startsWith('Total'));
 	const actionMatch = operationLine.match(/^(Deposita|Retira): (\d+) PO$/m);
 	const totalMatch = totalLine.match(/^Total: (\d+) PO$/m);
+
+	// Validate the mention with the authot
+	const user = message.mentions.users.first();
+	if (message.author.id !== user.id) {
+		await message.react('❌');
+		await message.reply('Jogador mencionado não é o autor do post');
+		return;
+	}
 
 	// Setup the values for calculations of the current gold sum
 	const action = actionMatch[1];
@@ -85,6 +93,7 @@ client.on(Events.MessageCreate, async message => {
 	const newTotal = parseInt(totalMatch[1]);
 
 	// Fetch the last message to calculate the new amount of gold
+	console.log(`id mencionado: ${user.id}`);
 	const lastMessage = await getLastMessage(message.channel, user.id);
 	const lastTotal = lastMessage ? parseInt(lastMessage.content.match(/^Total: (\d+) PO$/m)[1]) : 0;
 
