@@ -17,10 +17,11 @@ const client = new Client({
 // Message structure validation function
 function validateMessageStructure(message) {
 	const content = message.content;
-	const userPattern = /^Jogador: <@!?.+$/m;
-	const operationPattern = /^(Deposita|Retira): \d+ PO$/m;
-	const totalPattern = /^Total: \d+ PO$/m;
-	const linkPattern = /^Origem: https:\/\/discord.com\/channels.+/m;
+
+	const userPattern = /^Jogador: <@!?\d+>\s*$/m;
+	const operationPattern = /^(Deposita|Retira): \d+ PO\s*$/m;
+	const totalPattern = /^Total: \d+ PO\s*$/m;
+	const linkPattern = /^Origem: https:\/\/discord.com\/channels.+\s*/m;
 
 	if (!userPattern.test(content)) return { valid: false, reason: 'Usuário fora do padrão' };
 	if (!operationPattern.test(content)) return { valid: false, reason: 'Operação fora do padrão' };
