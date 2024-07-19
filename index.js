@@ -17,7 +17,7 @@ const client = new Client({
 // Message structure validation function
 function validateMessageStructure(message) {
 	const content = message.content;
-	const userPattern = /^Jogador: <@.+$/m;
+	const userPattern = /^Jogador: <@!?.+$/m;
 	const operationPattern = /^(Deposita|Retira): \d+ PO$/m;
 	const totalPattern = /^Total: \d+ PO$/m;
 	const linkPattern = /^Origem: https:\/\/discord.com\/channels.+/m;
