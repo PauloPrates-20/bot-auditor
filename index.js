@@ -3,7 +3,7 @@ const { Client, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
 
 // Bot channels
-const CHANNEL_ID = '1263634516325699695';
+const { channel } = require('./config.json');
 
 // Create a new client instance
 const client = new Client({
@@ -43,9 +43,9 @@ function calculateNewTotal(lastTotal, action, amount) {
 }
 
 // Function to get last message from triggering user
-async function getLastMessage(channel, userId) {
+async function getLastMessage(channelId, userId) {
 	// Tweak limit as needed
-	const messages = await channel.messages.fetch({ limit: 100 });
+	const messages = await channelId.messages.fetch({ limit: 100 });
 	const userMessages = messages.filter(msg => msg.author.id === userId && !msg.author.bot);
 
 	const userMessagesArray = Array.from(userMessages.values());
@@ -58,9 +58,11 @@ async function getLastMessage(channel, userId) {
 
 // Listener for new messages
 client.on(Events.MessageCreate, async message => {
-	if (message.channel.id !== CHANNEL_ID) return;
+	// Checks if the channel is correct and the autor of the message is not the bot
+	if (message.channel.id !== channel) return;
 	if (message.author.bot) return;
 
+	// Validate message structure
 	const validation = validateMessageStructure(message);
 	if (!validation.valid) {
 		await message.react('❌');
@@ -68,6 +70,7 @@ client.on(Events.MessageCreate, async message => {
 		return;
 	}
 
+	// Separate the info on the post for analysis
 	const lines = message.content.split('\n');
 	const user = message.mentions.users.first();
 	const operationLine = lines.find(line => line.startsWith('Deposita') || line.startsWith('Retira'));
@@ -75,13 +78,16 @@ client.on(Events.MessageCreate, async message => {
 	const actionMatch = operationLine.match(/^(Deposita|Retira): (\d+) PO$/m);
 	const totalMatch = totalLine.match(/^Total: (\d+) PO$/m);
 
+	// Setup the values for calculations of the current gold sum
 	const action = actionMatch[1];
 	const amount = parseInt(actionMatch[2]);
 	const newTotal = parseInt(totalMatch[1]);
 
+	// Fetch the last message to calculate the new amount of gold
 	const lastMessage = await getLastMessage(message.channel, user.id);
 	const lastTotal = lastMessage ? parseInt(lastMessage.content.match(/^Total: (\d+) PO$/m)[1]) : 0;
 
+	// Validates sum
 	const expectedTotal = calculateNewTotal(lastTotal, action, amount);
 	if (newTotal !== expectedTotal) {
 		await message.react('❌');
