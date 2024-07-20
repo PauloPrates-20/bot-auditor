@@ -16,12 +16,12 @@ const client = new Client({
 
 // Message structure validation function
 function validateMessageStructure(message) {
-	const content = message.content;
+	const content = message.content.toLowerCase();
 
-	const userPattern = /^Jogador: <@!?\d+>\s*$/m;
-	const operationPattern = /^(Deposita|Retira): \d+ PO\s*$/m;
-	const totalPattern = /^Total: \d+ PO\s*$/m;
-	const linkPattern = /^Origem: https:\/\/discord.com\/channels.+\s*/m;
+	const userPattern = /^jogador:\s*<@!?\d+>\s*$/m;
+	const operationPattern = /^(deposita|retira):\s*\d+\s*po\s*$/m;
+	const totalPattern = /^ouro total:\s*\d+\s*po\s*$/m;
+	const linkPattern = /^origem:\s*https:\/\/discord.com\/channels.+\s*/m;
 
 	if (!userPattern.test(content)) return { valid: false, reason: 'Usuário fora do padrão' };
 	if (!operationPattern.test(content)) return { valid: false, reason: 'Operação fora do padrão' };
@@ -33,10 +33,10 @@ function validateMessageStructure(message) {
 
 // Function to calculate new total gold
 function calculateNewTotal(lastTotal, action, amount) {
-	if (action === 'Deposita') {
+	if (action === 'deposita') {
 		return lastTotal + amount;
 	}
-	else if (action === 'Retira') {
+	else if (action === 'retira') {
 		return lastTotal - amount;
 	}
 
@@ -54,13 +54,12 @@ async function getLastMessage(channelId, userId) {
 	if (userMessagesArray.length < 2) return;
 
 	const message = userMessagesArray[1];
-	console.log('id último: ' + message.author.id);
 	return message;
 }
 
 // Listener for new messages
 client.on(Events.MessageCreate, async message => {
-	// Checks if the channel is correct and the autor of the message is not the bot
+	// Checks if the channel is correct and the author of the message is not the bot
 	if (message.channel.id !== channel) return;
 	if (message.author.bot) return;
 
@@ -73,11 +72,11 @@ client.on(Events.MessageCreate, async message => {
 	}
 
 	// Separate the info on the post for analysis
-	const lines = message.content.split('\n');
-	const operationLine = lines.find(line => line.startsWith('Deposita') || line.startsWith('Retira'));
-	const totalLine = lines.find(line => line.startsWith('Total'));
-	const actionMatch = operationLine.match(/^(Deposita|Retira): (\d+) PO$/m);
-	const totalMatch = totalLine.match(/^Total: (\d+) PO$/m);
+	const lines = message.content.toLowerCase().split('\n');
+	const operationLine = lines.find(line => line.startsWith('deposita') || line.startsWith('retira'));
+	const totalLine = lines.find(line => line.startsWith('ouro total'));
+	const actionMatch = operationLine.match(/^(deposita|retira):\s*(\d+)\s*po$/m);
+	const totalMatch = totalLine.match(/^ouro total:\s*(\d+)\s*po$/m);
 
 	// Validate the mention with the authot
 	const user = message.mentions.users.first();
@@ -93,9 +92,8 @@ client.on(Events.MessageCreate, async message => {
 	const newTotal = parseInt(totalMatch[1]);
 
 	// Fetch the last message to calculate the new amount of gold
-	console.log(`id mencionado: ${user.id}`);
 	const lastMessage = await getLastMessage(message.channel, user.id);
-	const lastTotal = lastMessage ? parseInt(lastMessage.content.match(/^Total: (\d+) PO$/m)[1]) : 0;
+	const lastTotal = lastMessage ? parseInt(lastMessage.content.toLowerCase().match(/^ouro total:\s*(\d+)\s*po$/m)[1]) : 0;
 
 	// Validates sum
 	const expectedTotal = calculateNewTotal(lastTotal, action, amount);
